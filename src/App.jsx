@@ -217,26 +217,49 @@ useEffect(() => {
       `}</style>
 
       {/* ── HEADER ── */}
+      {/* ── HEADER ── */}
       <div style={{ padding:"26px 18px 0" }}>
 
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
           <div>
-            <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:36,
-              letterSpacing:2, lineHeight:1, color:"#e4e4f0" }}>
-              ACCOUNTABILITY
+            <div
+              style={{
+                fontFamily:"'Bebas Neue',sans-serif",
+                fontSize:36,
+                letterSpacing:2,
+                lineHeight:1,
+                color:"#e4e4f0"
+              }}
+            >
+              Hi {user.username.charAt(0).toUpperCase() + user.username.slice(1)}
             </div>
+
             <div style={{ color:"#333", fontSize:10, letterSpacing:2, marginTop:5 }}>
-              {new Date().toLocaleDateString("en",{weekday:"long",month:"long",day:"numeric"}).toUpperCase()}
+              {new Date().toLocaleDateString("en",{
+                weekday:"long",
+                month:"long",
+                day:"numeric"
+              }).toUpperCase()}
             </div>
           </div>
+
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:10, color:"#333", letterSpacing:1 }}>STREAK</div>
-            <div style={{ fontFamily:"'Bebas Neue'", fontSize:30,
-              color: streak > 0 ? "#f97316" : "#222" }}>
+            <div style={{ fontSize:10, color:"#333", letterSpacing:1 }}>
+              STREAK
+            </div>
+
+            <div
+              style={{
+                fontFamily:"'Bebas Neue'",
+                fontSize:30,
+                color: streak > 0 ? "#f97316" : "#222"
+              }}
+            >
               {streak}🔥
             </div>
           </div>
         </div>
+      </div>
 
         {/* save pill */}
         <div style={{ height:18, marginTop:6 }}>
