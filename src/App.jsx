@@ -39,7 +39,9 @@ export default function Tracker() {
 
   // ── Load from persistent storage ──────────────────────────────
   useEffect(() => {
-  (async () => {
+  if (!user) return
+
+  ;(async () => {
     try {
       const { data, error } = await supabase
         .from("tracker_data")
@@ -47,12 +49,12 @@ export default function Tracker() {
         .eq("user_id", user.id)
         .single()
 
-      if (data?.data) {
-        setAllData(data.data)
+      if (error && error.code !== "PGRST116") {
+        console.log(error)
       }
 
-      if (error) {
-        console.log(error)
+      if (data?.data) {
+        setAllData(data.data)
       }
 
     } catch (err) {
@@ -61,7 +63,7 @@ export default function Tracker() {
 
     setLoading(false)
   })()
-}, [])
+}, [user])
 
 useEffect(() => {
   const saved = localStorage.getItem("tracker_user")
@@ -94,10 +96,15 @@ useEffect(() => {
   try {
     const { error } = await supabase
       .from("tracker_data")
-      .upsert({
-        user_id: user.id,
-        data: newData
-      })
+      .upsert(
+  {
+    user_id: user.id,
+    data: newData
+  },
+  {
+    onConflict: "user_id"
+  }
+)
 
     if (error) {
       console.log(error)
