@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase"
+import Auth from "./Auth"
 
 const TASKS = [
   { id: "run",    label: "5km Run / 10k Steps",  icon: "🏃", category: "body",   detail: "Track steps or log your run" },
@@ -34,6 +35,7 @@ export default function Tracker() {
   const [streak,     setStreak]     = useState(0);
   const [loading,    setLoading]    = useState(true);
   const [saveLabel,  setSaveLabel]  = useState("");
+  const [user, setUser] = useState(null);
 
   // ── Load from persistent storage ──────────────────────────────
   useEffect(() => {
@@ -42,7 +44,7 @@ export default function Tracker() {
       const { data, error } = await supabase
         .from("tracker_data")
         .select("*")
-        .eq("id", "main")
+        .eq("user_id", user.id)
         .single()
 
       if (data?.data) {
@@ -59,6 +61,14 @@ export default function Tracker() {
 
     setLoading(false)
   })()
+}, [])
+
+useEffect(() => {
+  const saved = localStorage.getItem("tracker_user")
+
+  if (saved) {
+    setUser(JSON.parse(saved))
+  }
 }, [])
 
   // ── Streak calculation ─────────────────────────────────────────
@@ -85,7 +95,7 @@ export default function Tracker() {
     const { error } = await supabase
       .from("tracker_data")
       .upsert({
-        id: "main",
+        user_id: user.id,
         data: newData
       })
 
@@ -153,6 +163,10 @@ export default function Tracker() {
   const barColor = n => n >= 6 ? "#10b981" : n >= 4 ? "#6366f1" : n >= 2 ? "#f97316" : "#1e1e2e";
 
   // ── Loading screen ─────────────────────────────────────────────
+  if (!user) {
+    return <Auth onLogin={setUser} />
+  }
+
   if (loading) return (
     <div style={{ minHeight:"100vh", background:"#07070f", display:"flex",
       alignItems:"center", justifyContent:"center", fontFamily:"monospace",
