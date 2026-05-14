@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase"
 import Auth from "./Auth"
+import EmojiPicker from "emoji-picker-react"
+import { Trash2 } from "lucide-react"
 
 const TASKS = [
   { id: "run",    label: "5km Run / 10k Steps",  icon: "🏃", category: "body",   detail: "Track steps or log your run" },
@@ -36,6 +38,12 @@ export default function Tracker() {
   const [loading,    setLoading]    = useState(true);
   const [saveLabel,  setSaveLabel]  = useState("");
   const [user, setUser] = useState(null);
+  const [tasks, setTasks] = useState([])
+  const [categories, setCategories] = useState([])
+  const [newTask, setNewTask] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("")
+  const [selectedEmoji, setSelectedEmoji] = useState("📝")
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   // ── Load from persistent storage ──────────────────────────────
   useEffect(() => {
@@ -72,6 +80,112 @@ useEffect(() => {
     setUser(JSON.parse(saved))
   }
 }, [])
+
+useEffect(() => {
+
+  if (!user) return
+
+  loadTasks()
+
+}, [user])
+
+async function loadTasks() {
+
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  setTasks(data || [])
+}
+
+async function addTask() {
+
+  if (!newTask.trim()) return
+
+  const { error } = await supabase
+    .from("tasks")
+    .insert([
+      {
+        user_id: user.id,
+        title: newTask,
+        category: selectedCategory || "mind",
+        emoji: selectedEmoji,
+        completed: false
+      }
+    ])
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  setNewTask("")
+  loadTasks()
+}
+
+async function deleteTask(taskId) {
+
+  const { error } = await supabase
+    .from("tasks")
+    .delete()
+    .eq("id", taskId)
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  loadTasks()
+}
+
+async function addCategory(name, color) {
+
+  const { error } = await supabase
+    .from("categories")
+    .insert([
+      {
+        user_id: user.id,
+        name,
+        color
+      }
+    ])
+
+  if (error) {
+    console.log(error)
+  }
+
+  loadCategories()
+}
+
+useEffect(() => {
+
+  if (!user) return
+
+  loadCategories()
+
+}, [user])
+
+async function loadCategories() {
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("user_id", user.id)
+
+  if (error) {
+    console.log(error)
+    return
+  }
+
+  setCategories(data || [])
+}
 
   // ── Streak calculation ─────────────────────────────────────────
   useEffect(() => {
@@ -141,11 +255,19 @@ useEffect(() => {
 
   // ── Derived values ─────────────────────────────────────────────
   const dayData      = getDayData(allData, today);
-  const completed    = dayData.completed || {};
-  const todayEarning = dayData.earning   || 0;
-  const doneCount    = Object.values(completed).filter(Boolean).length;
-  const totalTasks   = TASKS.length;
-  const pct          = Math.round((doneCount / totalTasks) * 100);
+  const completed = dayData.completed || {};
+const todayEarning = dayData.earning || 0;
+
+const totalTasks = tasks.length;
+
+const doneCount = tasks.filter(
+  task => completed[task.id]
+).length;
+
+const pct =
+  totalTasks > 0
+    ? Math.round((doneCount / totalTasks) * 100)
+    : 0;
   const thisMonth    = today.slice(0, 7);
   let monthEarnings  = 0, fullDays = 0;
   Object.entries(allData).forEach(([date, dd]) => {
@@ -168,6 +290,15 @@ useEffect(() => {
   });
 
   const barColor = n => n >= 6 ? "#10b981" : n >= 4 ? "#6366f1" : n >= 2 ? "#f97316" : "#1e1e2e";
+  const COLORS = [
+  "#9400D3",
+  "#4B0082",
+  "#0000FF",
+  "#00FF00",
+  "#FFFF00",
+  "#FF7F00",
+  "#FF0000"
+]
 
   // ── Loading screen ─────────────────────────────────────────────
   if (!user) {
@@ -197,6 +328,14 @@ useEffect(() => {
           border:1px solid transparent;margin-bottom:7px;background:#0f0f1a}
         .row:active{opacity:.8}
         .row.done{background:#091410;border-color:#193328}
+        .deleteBtn{
+          opacity:0;
+          transition:opacity .15s ease;
+        }
+
+        .row:hover .deleteBtn{
+          opacity:1;
+        }
 
         .chk{width:22px;height:22px;border-radius:6px;border:2px solid #2a2a3a;
           display:flex;align-items:center;justify-content:center;
@@ -359,6 +498,109 @@ useEffect(() => {
         </div>
       </div>
 
+
+          <div
+  style={{
+    padding:"18px",
+    background:"#0f0f1a",
+    borderRadius:12,
+    margin:"18px"
+  }}
+>
+
+  <input
+    value={newTask}
+    onChange={(e) => setNewTask(e.target.value)}
+    placeholder="New Task"
+    style={{
+      width:"100%",
+      padding:"12px",
+      marginBottom:"10px",
+      background:"#07070f",
+      border:"1px solid #222",
+      color:"white"
+    }}
+  />
+
+  <select
+  value={selectedCategory}
+  onChange={(e) => setSelectedCategory(e.target.value)}
+  style={{
+    width:"100%",
+    padding:"12px",
+    marginBottom:"10px",
+    background:"#07070f",
+    color:"white"
+  }}
+>
+
+  <option value="body">Body</option>
+  <option value="mind">Mind & Skills</option>
+  <option value="hustle">Hustle</option>
+
+</select>
+
+  <div style={{ marginBottom:"12px", position:"relative" }}>
+
+  <button
+    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+    style={{
+      width:"100%",
+      padding:"12px",
+      background:"#07070f",
+      border:"1px solid #222",
+      color:"white",
+      fontSize:"20px",
+      borderRadius:"8px",
+      textAlign:"left",
+      cursor:"pointer"
+    }}
+  >
+    {selectedEmoji} Select Emoji
+  </button>
+
+  {showEmojiPicker && (
+
+    <div
+      style={{
+        position:"absolute",
+        zIndex:1000,
+        marginTop:"10px"
+      }}
+    >
+
+      <EmojiPicker
+        onEmojiClick={(emojiData) => {
+          setSelectedEmoji(emojiData.emoji)
+          setShowEmojiPicker(false)
+        }}
+        theme="dark"
+        searchDisabled={false}
+      />
+
+    </div>
+
+  )}
+
+</div>
+
+  <button
+    onClick={addTask}
+    style={{
+      width:"100%",
+      padding:"12px",
+      background:"#6366f1",
+      border:"none",
+      color:"white",
+      borderRadius:"8px"
+    }}
+  >
+    Add Task
+  </button>
+
+</div>
+
+
       {/* ── TODAY ── */}
       {view==="today" && (
         <div style={{ padding:"18px 18px 0" }}>
@@ -370,24 +612,55 @@ useEffect(() => {
                 <div style={{ width:18, height:2, background:CAT_COLORS[cat], borderRadius:1 }}/>
                 {label}
               </div>
-              {TASKS.filter(t=>t.category===cat).map(task=>(
+              {tasks.filter(task=>task.category===cat).map(task=>(
                 <div key={task.id}
                   className={`row ${completed[task.id]?"done":""}`}
                   onClick={()=>toggle(task.id)}>
                   <div className={`chk ${completed[task.id]?"done":""}`}>
                     {completed[task.id]&&"✓"}
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, display:"flex", gap:8, alignItems:"center" }}>
-                      <span>{task.icon}</span>
-                      <span style={{
-                        textDecoration: completed[task.id]?"line-through":"none",
-                        color: completed[task.id]?"#2e2e42":"#e4e4f0"
-                      }}>{task.label}</span>
-                    </div>
-                    <div style={{ fontSize:10, color:"#2e2e42", marginTop:3, marginLeft:22 }}>
-                      {task.detail}
-                    </div>
+                  <div
+                    style={{
+                      flex:1,
+                      display:"flex",
+                      justifyContent:"space-between",
+                      alignItems:"center"
+                    }}
+                  >                    
+  <div style={{ fontSize:13, display:"flex", gap:8, alignItems:"center" }}>
+
+<span>{task.emoji || "📝"}</span>
+
+  <span
+    style={{
+      textDecoration: completed[task.id] ? "line-through" : "none",
+      color: completed[task.id] ? "#2e2e42" : "#e4e4f0"
+    }}
+  >
+    {task.title}
+  </span>
+</div>
+<button
+  className="deleteBtn"
+  onClick={(e) => {
+    e.stopPropagation()
+    deleteTask(task.id)
+  }}
+  style={{
+    background:"transparent",
+    border:"none",
+    color:"#ef4444",
+    cursor:"pointer",
+    display:"flex",
+    alignItems:"center",
+    justifyContent:"center"
+  }}
+>
+
+  <Trash2 size={16} />
+
+</button>
+                    
                   </div>
                 </div>
               ))}
@@ -488,14 +761,14 @@ useEffect(() => {
                   </span>
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {TASKS.map(t=>(
+                  {tasks.map(t=>(
                     <span key={t.id} style={{
                       fontSize:12, padding:"2px 7px", borderRadius:4,
                       background: tasks[t.id]?"#091410":"#141420",
                       color:       tasks[t.id]?"#10b981":"#2e2e42",
                       border:`1px solid ${tasks[t.id]?"#193328":"#1a1a28"}`
                     }}>
-                      {t.icon}{tasks[t.id]?" ✓":" —"}
+                      📝{tasks[t.id]?" ✓":" —"}
                     </span>
                   ))}
                 </div>
