@@ -3,6 +3,11 @@ import { supabase } from "./supabase"
 import Auth from "./Auth"
 import EmojiPicker from "emoji-picker-react"
 import { Trash2 } from "lucide-react"
+import {
+  Menu,
+  X,
+  LogOut
+} from "lucide-react"
 
 const TASKS = [
   { id: "run",    label: "5km Run / 10k Steps",  icon: "🏃", category: "body",   detail: "Track steps or log your run" },
@@ -43,6 +48,7 @@ export default function Tracker() {
   const [newTask, setNewTask] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("")
   const [selectedEmoji, setSelectedEmoji] = useState("📝")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   // ── Load from persistent storage ──────────────────────────────
@@ -235,6 +241,13 @@ async function loadCategories() {
   setTimeout(() => setSaveLabel(""), 2200)
 }
 
+function logout() {
+
+  localStorage.removeItem("tracker_user")
+
+  setUser(null)
+}
+
   function toggle(taskId) {
     const dd  = getDayData(allData, today);
     const upd = {
@@ -315,11 +328,38 @@ const pct =
 
   // ── UI ─────────────────────────────────────────────────────────
   return (
-    <div style={{ minHeight:"100vh", background:"#07070f", color:"#e4e4f0",
-      fontFamily:"'DM Mono','Courier New',monospace", paddingBottom:80 }}>
+    <div
+  style={{
+    minHeight:"100vh",
+    width:"100%",
+    background:"#07070f",
+    color:"#e4e4f0",
+    fontFamily:"'DM Mono','Courier New',monospace",
+    paddingBottom:80,
+    overflowX:"hidden",
+    display:"flex",
+    justifyContent:"center"
+  }}
+>
+
+<div
+  style={{
+    width:"100%",
+    maxWidth:"750px",
+    paddingLeft:"24px",
+    paddingRight:"24px"
+  }}
+>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
+        html,body,#root{
+          width:100%;
+          min-height:100%;
+          background:#07070f;
+          overflow-x:hidden;
+        }
         ::-webkit-scrollbar{width:3px;background:#0a0a12}
         ::-webkit-scrollbar-thumb{background:#222;border-radius:4px}
 
@@ -364,8 +404,13 @@ const pct =
 
         {/* ── HEADER ── */}
         <div>
-<div style={{ padding:"26px 18px 0" }}>
-
+<div
+  style={{
+    padding:"26px 18px 0",
+    width:"100%",
+    maxWidth:"100%"
+  }}
+>
   <div
     style={{
       display:"flex",
@@ -373,7 +418,24 @@ const pct =
       alignItems:"flex-start"
     }}
   >
+
+<button
+  onClick={() => setSidebarOpen(true)}
+  style={{
+    background:"transparent",
+    border:"none",
+    color:"#e4e4f0",
+    cursor:"pointer",
+    padding:0,
+    marginRight:"12px"
+  }}
+>
+  <Menu size={24} />
+</button>
+
     <div>
+
+    
 
       <div
         style={{
@@ -498,8 +560,9 @@ const pct =
         </div>
       </div>
 
-
+{view==="today" && (
           <div
+          
   style={{
     padding:"18px",
     background:"#0f0f1a",
@@ -599,7 +662,191 @@ const pct =
   </button>
 
 </div>
+)}
 
+{/* ── SIDEBAR ───────────────────────────────── */}
+
+<div
+  style={{
+    position:"fixed",
+    inset:0,
+    background: sidebarOpen
+      ? "rgba(0,0,0,0.45)"
+      : "transparent",
+    pointerEvents: sidebarOpen ? "auto" : "none",
+    transition:"0.25s",
+    zIndex:999
+  }}
+  onClick={() => setSidebarOpen(false)}
+>
+
+  <div
+    onClick={(e) => e.stopPropagation()}
+    style={{
+      position:"absolute",
+      top:0,
+      left: sidebarOpen ? 0 : "-320px",
+      width:"280px",
+      height:"100%",
+      background:"#0f0f1a",
+      borderRight:"1px solid #1e1e30",
+      transition:"0.25s ease",
+      padding:"22px",
+      display:"flex",
+      flexDirection:"column"
+    }}
+  >
+
+    {/* top */}
+
+    <div
+      style={{
+        display:"flex",
+        justifyContent:"space-between",
+        alignItems:"center",
+        marginBottom:"28px"
+      }}
+    >
+
+      <div
+        style={{
+          fontSize:"18px",
+          fontWeight:"600"
+        }}
+      >
+        Profile
+      </div>
+
+      <button
+        onClick={() => setSidebarOpen(false)}
+        style={{
+          background:"transparent",
+          border:"none",
+          color:"#888",
+          cursor:"pointer"
+        }}
+      >
+        <X size={20} />
+      </button>
+
+    </div>
+
+    {/* profile */}
+
+    <div
+      style={{
+        display:"flex",
+        alignItems:"center",
+        gap:"14px",
+        marginBottom:"30px"
+      }}
+    >
+
+      <img
+        src={`https://api.dicebear.com/7.x/adventurer/svg?seed=${user.username}`}
+        alt="avatar"
+        style={{
+          width:"62px",
+          height:"62px",
+          borderRadius:"50%",
+          background:"#141422"
+        }}
+      />
+
+      <div>
+
+        <div
+          style={{
+            fontSize:"17px",
+            fontWeight:"600"
+          }}
+        >
+          {user.username}
+        </div>
+
+        <div
+          style={{
+            fontSize:"11px",
+            color:"#666",
+            marginTop:"4px"
+          }}
+        >
+          Cloud Synced
+        </div>
+
+      </div>
+
+    </div>
+
+    {/* future sections */}
+
+    <div
+      style={{
+        display:"flex",
+        flexDirection:"column",
+        gap:"10px"
+      }}
+    >
+
+      {[
+        "Profile",
+        "Themes",
+        "Analytics",
+        "Settings"
+      ].map(item => (
+
+        <button
+          key={item}
+          style={{
+            background:"#141422",
+            border:"1px solid #1e1e30",
+            color:"#e4e4f0",
+            padding:"12px",
+            borderRadius:"10px",
+            textAlign:"left",
+            cursor:"pointer"
+          }}
+        >
+          {item}
+        </button>
+
+      ))}
+
+    </div>
+
+    {/* logout */}
+
+    <div style={{ marginTop:"auto" }}>
+
+      <button
+        onClick={logout}
+        style={{
+          width:"100%",
+          background:"#2a1010",
+          border:"1px solid #5a1a1a",
+          color:"#ef4444",
+          padding:"14px",
+          borderRadius:"12px",
+          cursor:"pointer",
+          display:"flex",
+          alignItems:"center",
+          justifyContent:"center",
+          gap:"10px",
+          fontWeight:"600"
+        }}
+      >
+
+        <LogOut size={18} />
+
+        Logout
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
 
       {/* ── TODAY ── */}
       {view==="today" && (
@@ -745,7 +992,7 @@ const pct =
           {last14.slice().reverse().map(({key,cnt,earn})=>{
             const dd = allData[key];
             if (!dd && key!==today) return null;
-            const tasks = dd?.completed||{};
+            const completedTasks = dd?.completed || {};
             return (
               <div key={key} style={{
                 background:"#0f0f1a", borderRadius:10, padding:"11px 13px",
@@ -761,14 +1008,27 @@ const pct =
                   </span>
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
-                  {tasks.map(t=>(
-                    <span key={t.id} style={{
-                      fontSize:12, padding:"2px 7px", borderRadius:4,
-                      background: tasks[t.id]?"#091410":"#141420",
-                      color:       tasks[t.id]?"#10b981":"#2e2e42",
-                      border:`1px solid ${tasks[t.id]?"#193328":"#1a1a28"}`
-                    }}>
-                      📝{tasks[t.id]?" ✓":" —"}
+                  {Object.keys(completedTasks).map(taskId => (
+                    <span
+                      key={taskId}
+                      style={{
+                        fontSize:12,
+                        padding:"2px 7px",
+                        borderRadius:4,
+                        background: completedTasks[taskId]
+                          ? "#091410"
+                          : "#141420",
+                        color: completedTasks[taskId]
+                          ? "#10b981"
+                          : "#2e2e42",
+                        border:`1px solid ${
+                          completedTasks[taskId]
+                            ? "#193328"
+                            : "#1a1a28"
+                        }`
+                      }}
+                    >
+                      📝 {completedTasks[taskId] ? "✓" : "—"}
                     </span>
                   ))}
                 </div>
@@ -784,6 +1044,7 @@ const pct =
           )}
         </div>
       )}
+    </div>
     </div>
     
   );
